@@ -37,7 +37,7 @@ import {
   HY_API_KEY_ENV_KEY,
   QWEN_BASE_URL_ENV_KEY,
   QWEN_API_KEY_ENV_KEY,
-} from "./constants";
+} from "@/utils/constants";
 import { isFileNotFoundError } from "@/utils/fs-errors.js";
 import { restrictDirToCurrentUser } from "@/utils/windows-acl.js";
 
