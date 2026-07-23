@@ -1,9 +1,3 @@
-import { isCI } from './is-ci';
+import { IS_CI } from '@/env/is-ci';
 
-const envPath = isCI ? 'CI/CD Settings > Variables' : '.claude/.env';
-
-// if (!isCI) {
-//   config({ path: envPath });
-// }
-
-export { envPath };
+export const ENV_PATH = IS_CI ? 'CI/CD Settings > Variables' : '.claude/.env';

@@ -1,3 +1,3 @@
 import { env } from 'process';
 
-export const isCI = env.CI === 'true';
+export const IS_CI = env.CI === 'true';
