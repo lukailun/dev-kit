@@ -1,5 +1,5 @@
 import { env } from 'process';
-import { envPath } from '@/env/env-path';
+import { ENV_PATH } from '@/env/env-path';
 
 /**
  * 读取并验证单个环境变量，缺失时抛出错误（而非 process.exit）
@@ -10,7 +10,7 @@ export function requireEnv(name: string): string {
   const value = env[name];
   if (!value) {
     throw new Error(
-      `[错误]: 未配置 ${name} 环境变量，请在 ${envPath} 文件中配置`
+      `[错误]: 未配置 ${name} 环境变量，请在 ${ENV_PATH} 文件中配置`
     );
   }
   return value;
@@ -25,7 +25,7 @@ export function requireOneOfEnv(names: string[]): string {
     if (value) return value;
   }
   throw new Error(
-    `[错误]: 未配置 ${names.join(' 或 ')} 环境变量，请在 ${envPath} 文件中配置其中之一`
+    `[错误]: 未配置 ${names.join(' 或 ')} 环境变量，请在 ${ENV_PATH} 文件中配置其中之一`
   );
 }
 
