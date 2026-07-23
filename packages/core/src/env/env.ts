@@ -5,8 +5,8 @@ import {
   MIMO_API_KEY_ENV_KEY,
   MIMO_BASE_URL_ENV_KEY,
 } from "./constants";
-// import { isFileNotFoundError } from "./fs-errors.js";
-// import { restrictDirToCurrentUser } from "./windows-acl.js";
+import { isFileNotFoundError } from "@/utils/fs-errors.js";
+import { restrictDirToCurrentUser } from "@/utils/windows-acl.js";
 
 export const devKitEnvDir = path.join(os.homedir(), ".dev-kit");
 export const devKitEnvPath = path.join(devKitEnvDir, ".env");
@@ -17,8 +17,8 @@ export type CredentialDiagnostic = {
   key: string;
   source:
     | "process.env"
-    | "~/.openwiki/.env"
-    | "process.env over ~/.openwiki/.env"
+    | "~/.dev-kit/.env"
+    | "process.env over ~/.dev-kit/.env"
     | "unset";
   length: number | null;
   preview: string;
@@ -26,8 +26,8 @@ export type CredentialDiagnostic = {
 };
 
 /**
- * Every environment variable OpenWiki reads or persists, in the order they are
- * written to `~/.openwiki/.env`. This is the single source of truth: the
+ * Every environment variable DevKit reads or persists, in the order they are
+ * written to `~/.dev-kit/.env`. This is the single source of truth: the
  * credential diagnostics list and the agent's debug-dump key list are both
  * derived from it (see {@link CREDENTIAL_DIAGNOSTIC_ENV_KEYS} and
  * {@link DEBUG_ENV_KEYS}), so they cannot silently drift out of sync when a new
@@ -82,7 +82,7 @@ const deprecatedEnvKeys = ["OPENAI_ORG_ID", "OPENAI_PROJECT"];
  * The shell's values for managed credential keys, captured once before any load
  * or save wrote to `process.env`. A shell export keeps precedence over
  * `~/.openwiki/.env` at runtime, so this snapshot lets the wizard tell the user
- * when a value they save will be shadowed, and keeps {@link saveOpenWikiEnv}
+ * when a value they save will be shadowed, and keeps {@link saveDevKitEnv}
  * from masking a shell var in-process. Held in memory only; never persisted or
  * logged.
  */
@@ -114,7 +114,7 @@ function captureShellEnv(): void {
 /**
  * The shell value for a managed key as captured at startup, or `undefined` when
  * the shell did not set it. Reflects the pre-load snapshot, so it stays stable
- * even after {@link loadOpenWikiEnv} / {@link saveOpenWikiEnv} mutate
+ * even after {@link loadDevKitEnv} / {@link saveDevKitEnv} mutate
  * `process.env`.
  */
 export function getShellEnvValue(key: string): string | undefined {
@@ -130,7 +130,7 @@ export function getShellEnvValue(key: string): string | undefined {
 let savedEnvAtStartup: Record<string, string> | undefined;
 
 /**
- * The saved `~/.openwiki/.env` value for a key as of startup, or `undefined`.
+ * The saved `~/.dev-kit/.env` value for a key as of startup, or `undefined`.
  * Distinct from {@link getShellEnvValue} (the shell snapshot) and from
  * `process.env` (shell-over-file at runtime).
  */
@@ -138,42 +138,37 @@ export function getSavedEnvValue(key: string): string | undefined {
   return savedEnvAtStartup?.[key];
 }
 
-export async function loadOpenWikiEnv(): Promise<EnvMap> {
+export async function loadDevKitEnv(): Promise<EnvMap> {
   captureShellEnv();
-
-  const env = await readOpenWikiEnv();
-
+  const env = await readDevKitEnv();
   if (savedEnvAtStartup === undefined) {
     savedEnvAtStartup = { ...env };
   }
-
   for (const [key, value] of Object.entries(env)) {
     if (deprecatedEnvKeys.includes(key)) {
       continue;
     }
-
     if (process.env[key] === undefined) {
       process.env[key] = value;
     }
   }
-
   return env;
 }
 
 export async function getCredentialDiagnostics(): Promise<
   CredentialDiagnostic[]
 > {
-  const fileEnv = await readOpenWikiEnv();
+  const fileEnv = await readDevKitEnv();
 
   return CREDENTIAL_DIAGNOSTIC_ENV_KEYS.map((key) =>
     createCredentialDiagnostic(key, fileEnv),
   );
 }
 
-export async function saveOpenWikiEnv(updates: EnvMap): Promise<void> {
+export async function saveDevKitEnv(updates: EnvMap): Promise<void> {
   captureShellEnv();
 
-  const currentEnv = await readOpenWikiEnv();
+  const currentEnv = await readDevKitEnv();
   const nextEnv = {
     ...currentEnv,
     ...updates,
@@ -268,26 +263,19 @@ function getCredentialSource(
   fileValue: string | undefined,
 ): CredentialDiagnostic["source"] {
   if (processValue !== undefined && fileValue !== undefined) {
-    return "process.env over ~/.openwiki/.env";
+    return "process.env over ~/.dev-kit/.env";
   }
-
   if (processValue !== undefined) {
     return "process.env";
   }
-
   if (fileValue !== undefined) {
-    return "~/.openwiki/.env";
+    return "~/.dev-kit/.env";
   }
-
   return "unset";
 }
 
 function isNonSecretDiagnosticKey(key: string): boolean {
   return (
-    key === OPENWIKI_MODEL_ID_ENV_KEY ||
-    key === OPENWIKI_PROVIDER_ENV_KEY ||
-    key === OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY ||
-    key === OPENWIKI_OPENROUTER_PROVIDER_ONLY_ENV_KEY ||
     key === ANTHROPIC_BASE_URL_ENV_KEY ||
     key === OPENAI_BASE_URL_ENV_KEY ||
     key === OPENAI_COMPATIBLE_BASE_URL_ENV_KEY ||
@@ -339,7 +327,7 @@ function getProviderWarnings(value: string): string[] {
 function getRetryAttemptsWarnings(value: string): string[] {
   try {
     resolveProviderRetryAttempts({
-      [OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY]: value,
+      [DEV_KIT_PROVIDER_RETRY_ATTEMPTS_ENV_KEY]: value,
     });
 
     return [];
@@ -348,14 +336,13 @@ function getRetryAttemptsWarnings(value: string): string[] {
   }
 }
 
-async function readOpenWikiEnv(): Promise<EnvMap> {
+async function readDevKitEnv(): Promise<EnvMap> {
   try {
     return parseEnv(await readFile(devKitEnvPath, "utf8"));
   } catch (error) {
     if (isFileNotFoundError(error)) {
       return {};
     }
-
     throw error;
   }
 }
