@@ -2,8 +2,41 @@ import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
-  MIMO_API_KEY_ENV_KEY,
+  FIGMA_BASE_URL_ENV_KEY,
+  FIGMA_FILE_ID_ENV_KEY,
+  FIGMA_PAGE_ID_ENV_KEY,
+  FIGMA_TOKEN_ENV_KEY,
+  GITLAB_BASE_URL_ENV_KEY,
+  GITLAB_TOKEN_ENV_KEY,
+  LINEAR_API_KEY_ENV_KEY,
+  LINEAR_PROJECT_ID_ENV_KEY,
+  OPENROUTER_BASE_URL_ENV_KEY,
+  OPENROUTER_API_KEY_ENV_KEY,
+  SENTRY_API_KEY_ENV_KEY,
+  SENTRY_BASE_URL_ENV_KEY,
+  SENTRY_ORGANIZATION_ENV_KEY,
+  SENTRY_PROJECT_ENV_KEY,
+  CLAUDE_BASE_URL_ENV_KEY,
+  CLAUDE_API_KEY_ENV_KEY,
+  CLAUDE_AUTH_TOKEN_ENV_KEY,
+  DEEPSEEK_BASE_URL_ENV_KEY,
+  DEEPSEEK_API_KEY_ENV_KEY,
+  GEMINI_BASE_URL_ENV_KEY,
+  GEMINI_API_KEY_ENV_KEY,
+  GLM_BASE_URL_ENV_KEY,
+  GLM_API_KEY_ENV_KEY,
+  KIMI_BASE_URL_ENV_KEY,
+  KIMI_API_KEY_ENV_KEY,
+  LONGCAT_BASE_URL_ENV_KEY,
+  LONGCAT_API_KEY_ENV_KEY,
   MIMO_BASE_URL_ENV_KEY,
+  MIMO_API_KEY_ENV_KEY,
+  MINIMAX_BASE_URL_ENV_KEY,
+  MINIMAX_API_KEY_ENV_KEY,
+  HY_BASE_URL_ENV_KEY,
+  HY_API_KEY_ENV_KEY,
+  QWEN_BASE_URL_ENV_KEY,
+  QWEN_API_KEY_ENV_KEY,
 } from "./constants";
 import { isFileNotFoundError } from "@/utils/fs-errors.js";
 import { restrictDirToCurrentUser } from "@/utils/windows-acl.js";
@@ -34,13 +67,47 @@ export type CredentialDiagnostic = {
  * managed key is added.
  */
 export const MANAGED_ENV_KEYS = [
-  MIMO_API_KEY_ENV_KEY,
+  // Figma
+  FIGMA_BASE_URL_ENV_KEY,
+  FIGMA_FILE_ID_ENV_KEY,
+  FIGMA_PAGE_ID_ENV_KEY,
+  FIGMA_TOKEN_ENV_KEY,
+  // GitLab
+  GITLAB_BASE_URL_ENV_KEY,
+  GITLAB_TOKEN_ENV_KEY,
+  // Linear
+  LINEAR_API_KEY_ENV_KEY,
+  LINEAR_PROJECT_ID_ENV_KEY,
+  // OpenRouter
+  OPENROUTER_BASE_URL_ENV_KEY,
+  OPENROUTER_API_KEY_ENV_KEY,
+  // Sentry
+  SENTRY_API_KEY_ENV_KEY,
+  SENTRY_BASE_URL_ENV_KEY,
+  SENTRY_ORGANIZATION_ENV_KEY,
+  SENTRY_PROJECT_ENV_KEY,
+  // AI 服务
+  CLAUDE_BASE_URL_ENV_KEY,
+  CLAUDE_API_KEY_ENV_KEY,
+  CLAUDE_AUTH_TOKEN_ENV_KEY,
+  DEEPSEEK_BASE_URL_ENV_KEY,
+  DEEPSEEK_API_KEY_ENV_KEY,
+  GEMINI_BASE_URL_ENV_KEY,
+  GEMINI_API_KEY_ENV_KEY,
+  GLM_BASE_URL_ENV_KEY,
+  GLM_API_KEY_ENV_KEY,
+  KIMI_BASE_URL_ENV_KEY,
+  KIMI_API_KEY_ENV_KEY,
+  LONGCAT_BASE_URL_ENV_KEY,
+  LONGCAT_API_KEY_ENV_KEY,
   MIMO_BASE_URL_ENV_KEY,
-  "OPENWIKI_HTTPS_OAUTH_REDIRECT_URI",
-  "OPENWIKI_OAUTH_CALLBACK_PORT",
-  "LANGSMITH_API_KEY",
-  "LANGCHAIN_PROJECT",
-  "LANGCHAIN_TRACING_V2",
+  MIMO_API_KEY_ENV_KEY,
+  MINIMAX_BASE_URL_ENV_KEY,
+  MINIMAX_API_KEY_ENV_KEY,
+  HY_BASE_URL_ENV_KEY,
+  HY_API_KEY_ENV_KEY,
+  QWEN_BASE_URL_ENV_KEY,
+  QWEN_API_KEY_ENV_KEY,
 ] as const;
 
 // LangChain project/tracing settings are managed but are not credentials, so
@@ -57,10 +124,8 @@ const NON_CREDENTIAL_ENV_KEYS = new Set<string>([
  * credential key automatically appears in diagnostics.
  */
 export const CREDENTIAL_DIAGNOSTIC_ENV_KEYS: readonly string[] = [
-  OPENWIKI_PROVIDER_ENV_KEY,
   ...MANAGED_ENV_KEYS.filter(
-    (key) =>
-      key !== OPENWIKI_PROVIDER_ENV_KEY && !NON_CREDENTIAL_ENV_KEYS.has(key),
+    (key) => !NON_CREDENTIAL_ENV_KEYS.has(key),
   ),
 ];
 
@@ -243,18 +308,7 @@ function createCredentialDiagnostic(
     preview: isNonSecretDiagnosticKey(key)
       ? JSON.stringify(value)
       : createCredentialPreview(value),
-    warnings:
-      key === OPENWIKI_MODEL_ID_ENV_KEY
-        ? getModelWarnings(value)
-        : key === OPENWIKI_PROVIDER_ENV_KEY
-          ? getProviderWarnings(value)
-          : key === OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY
-            ? getRetryAttemptsWarnings(value)
-            : key === OPENAI_COMPATIBLE_BASE_URL_ENV_KEY
-              ? getProviderBaseUrlWarnings("openai-compatible", value)
-              : key === ANTHROPIC_BASE_URL_ENV_KEY
-                ? getProviderBaseUrlWarnings("anthropic", value)
-                : getCredentialWarnings(value),
+    warnings: getCredentialWarnings(value),
   };
 }
 
@@ -275,15 +329,8 @@ function getCredentialSource(
 }
 
 function isNonSecretDiagnosticKey(key: string): boolean {
-  return (
-    key === ANTHROPIC_BASE_URL_ENV_KEY ||
-    key === OPENAI_BASE_URL_ENV_KEY ||
-    key === OPENAI_COMPATIBLE_BASE_URL_ENV_KEY ||
-    key === BEDROCK_AWS_REGION_ENV_KEY ||
-    key === GOOGLE_CLOUD_PROJECT_ENV_KEY ||
-    key === GOOGLE_CLOUD_LOCATION_ENV_KEY ||
-    key === GOOGLE_APPLICATION_CREDENTIALS_ENV_KEY
-  );
+  // 非密钥的配置项（如 Base URL）不需要隐藏
+  return key.endsWith("_BASE_URL") || key.endsWith("_PROJECT") || key.endsWith("_ORGANIZATION") || key.endsWith("_FILE_ID") || key.endsWith("_PAGE_ID");
 }
 
 function createCredentialPreview(value: string): string {
@@ -314,26 +361,6 @@ function getCredentialWarnings(value: string): string[] {
   }
 
   return warnings;
-}
-
-function getModelWarnings(value: string): string[] {
-  return isValidModelId(value) ? [] : ["invalid model ID"];
-}
-
-function getProviderWarnings(value: string): string[] {
-  return normalizeProvider(value) === null ? ["invalid provider"] : [];
-}
-
-function getRetryAttemptsWarnings(value: string): string[] {
-  try {
-    resolveProviderRetryAttempts({
-      [DEV_KIT_PROVIDER_RETRY_ATTEMPTS_ENV_KEY]: value,
-    });
-
-    return [];
-  } catch {
-    return ["invalid retry attempts"];
-  }
 }
 
 async function readDevKitEnv(): Promise<EnvMap> {
