@@ -59,29 +59,27 @@ export type CredentialDiagnostic = {
 };
 
 /**
- * Every environment variable DevKit reads or persists, in the order they are
- * written to `~/.dev-kit/.env`. This is the single source of truth: the
- * credential diagnostics list and the agent's debug-dump key list are both
- * derived from it (see {@link CREDENTIAL_DIAGNOSTIC_ENV_KEYS} and
- * {@link DEBUG_ENV_KEYS}), so they cannot silently drift out of sync when a new
- * managed key is added.
+ * DevKit 读取或持久化的所有环境变量，按写入 `~/.dev-kit/.env` 的顺序排列。
+ * 这是唯一的数据来源：凭证诊断列表和调试转储的键列表均由此派生
+ * （参见 {@link CREDENTIAL_DIAGNOSTIC_ENV_KEYS} 和 {@link DEBUG_ENV_KEYS}），
+ * 因此新增受管键时不会出现静默不同步的问题。
  */
 export const MANAGED_ENV_KEYS = [
-  // Figma
+  // Figma 设计工具
   FIGMA_BASE_URL_ENV_KEY,
   FIGMA_FILE_ID_ENV_KEY,
   FIGMA_PAGE_ID_ENV_KEY,
   FIGMA_TOKEN_ENV_KEY,
-  // GitLab
+  // GitLab 代码托管
   GITLAB_BASE_URL_ENV_KEY,
   GITLAB_TOKEN_ENV_KEY,
-  // Linear
+  // Linear 项目管理
   LINEAR_API_KEY_ENV_KEY,
   LINEAR_PROJECT_ID_ENV_KEY,
-  // OpenRouter
+  // OpenRouter 模型路由
   OPENROUTER_BASE_URL_ENV_KEY,
   OPENROUTER_API_KEY_ENV_KEY,
-  // Sentry
+  // Sentry 错误监控
   SENTRY_API_KEY_ENV_KEY,
   SENTRY_BASE_URL_ENV_KEY,
   SENTRY_ORGANIZATION_ENV_KEY,
@@ -110,18 +108,16 @@ export const MANAGED_ENV_KEYS = [
   QWEN_API_KEY_ENV_KEY,
 ] as const;
 
-// LangChain project/tracing settings are managed but are not credentials, so
-// they are excluded from the diagnostics panel.
+// LangChain 项目/追踪设置属于受管项，但不属于凭证，因此从诊断面板中排除。
 const NON_CREDENTIAL_ENV_KEYS = new Set<string>([
   "LANGCHAIN_PROJECT",
   "LANGCHAIN_TRACING_V2",
 ]);
 
 /**
- * Managed keys surfaced (in display order) in the credential diagnostics panel:
- * the provider/model settings and every credential, but not the LangChain
- * project/tracing settings. Derived from {@link MANAGED_ENV_KEYS} so a new
- * credential key automatically appears in diagnostics.
+ * 凭证诊断面板中展示的受管键（按显示顺序）：包括提供商/模型设置及所有凭证，
+ * 但不包括 LangChain 项目/追踪设置。由 {@link MANAGED_ENV_KEYS} 派生，
+ * 新增凭证键会自动出现在诊断中。
  */
 export const CREDENTIAL_DIAGNOSTIC_ENV_KEYS: readonly string[] = [
   ...MANAGED_ENV_KEYS.filter(
@@ -130,9 +126,8 @@ export const CREDENTIAL_DIAGNOSTIC_ENV_KEYS: readonly string[] = [
 ];
 
 /**
- * Keys dumped in the agent's environment debug line: every managed key plus the
- * LangChain endpoint override that OpenWiki reads but never persists. Derived
- * from {@link MANAGED_ENV_KEYS} so it cannot drift.
+ * 代理环境调试行中转储的键：包括所有受管键，以及 OpenWiki 读取但从不持久化的
+ * LangChain 端点覆盖。由 {@link MANAGED_ENV_KEYS} 派生，不会出现不同步。
  */
 export const DEBUG_ENV_KEYS: readonly string[] = [
   ...MANAGED_ENV_KEYS,
@@ -141,22 +136,17 @@ export const DEBUG_ENV_KEYS: readonly string[] = [
 
 const managedEnvKeys: readonly string[] = MANAGED_ENV_KEYS;
 
-const deprecatedEnvKeys = ["OPENAI_ORG_ID", "OPENAI_PROJECT"];
-
 /**
- * The shell's values for managed credential keys, captured once before any load
- * or save wrote to `process.env`. A shell export keeps precedence over
- * `~/.openwiki/.env` at runtime, so this snapshot lets the wizard tell the user
- * when a value they save will be shadowed, and keeps {@link saveDevKitEnv}
- * from masking a shell var in-process. Held in memory only; never persisted or
- * logged.
+ * 启动时捕获的受管凭证键的 shell 值，在任何加载或保存写入 `process.env` 之前捕获一次。
+ * shell export 在运行时优先于 `~/.openwiki/.env`，因此此快照让向导可以告知用户
+ * 保存的值是否会被覆盖，并防止 {@link saveDevKitEnv} 在进程内遮蔽 shell 变量。
+ * 仅保存在内存中，不会持久化或记录日志。
  */
 let shellEnvAtStartup: Record<string, string> | undefined;
 
 /**
- * Snapshot the shell's values for managed credential keys. Idempotent: the
- * first call wins, so a later load or save cannot capture values OpenWiki
- * itself seeded into `process.env`.
+ * 快照受管凭证键的 shell 值。幂等操作：首次调用生效，
+ * 后续的加载或保存不会捕获 OpenWiki 自身注入 `process.env` 的值。
  */
 function captureShellEnv(): void {
   if (shellEnvAtStartup !== undefined) {
@@ -177,27 +167,24 @@ function captureShellEnv(): void {
 }
 
 /**
- * The shell value for a managed key as captured at startup, or `undefined` when
- * the shell did not set it. Reflects the pre-load snapshot, so it stays stable
- * even after {@link loadDevKitEnv} / {@link saveDevKitEnv} mutate
- * `process.env`.
+ * 启动时捕获的受管键的 shell 值，若 shell 未设置则返回 `undefined`。
+ * 反映加载前的快照，即使在 {@link loadDevKitEnv} / {@link saveDevKitEnv}
+ * 修改 `process.env` 后仍保持稳定。
  */
 export function getShellEnvValue(key: string): string | undefined {
   return shellEnvAtStartup?.[key];
 }
 
 /**
- * The values saved in `~/.openwiki/.env` as of the first load, before shell
- * exports win in `process.env`. Lets the setup wizard pre-fill fields from the
- * saved config rather than `process.env` (which a shell var may shadow), so
- * editing config never captures a shell override. In memory only.
+ * 首次加载时 `~/.openwiki/.env` 中保存的值，在 shell export 在 `process.env` 中生效之前。
+ * 使设置向导可以从保存的配置（而非可能被 shell 变量覆盖的 `process.env`）预填字段，
+ * 编辑配置时不会捕获 shell 覆盖值。仅保存在内存中。
  */
 let savedEnvAtStartup: Record<string, string> | undefined;
 
 /**
- * The saved `~/.dev-kit/.env` value for a key as of startup, or `undefined`.
- * Distinct from {@link getShellEnvValue} (the shell snapshot) and from
- * `process.env` (shell-over-file at runtime).
+ * 启动时 `~/.dev-kit/.env` 中指定键的已保存值，未设置则返回 `undefined`。
+ * 区别于 {@link getShellEnvValue}（shell 快照）和 `process.env`（运行时 shell 优先于文件）。
  */
 export function getSavedEnvValue(key: string): string | undefined {
   return savedEnvAtStartup?.[key];
@@ -210,9 +197,6 @@ export async function loadDevKitEnv(): Promise<EnvMap> {
     savedEnvAtStartup = { ...env };
   }
   for (const [key, value] of Object.entries(env)) {
-    if (deprecatedEnvKeys.includes(key)) {
-      continue;
-    }
     if (process.env[key] === undefined) {
       process.env[key] = value;
     }
@@ -238,14 +222,9 @@ export async function saveDevKitEnv(updates: EnvMap): Promise<void> {
     ...currentEnv,
     ...updates,
   };
-
-  for (const key of deprecatedEnvKeys) {
-    delete nextEnv[key];
-  }
-
-  // An empty value means "not set" (e.g. skipping the optional LangSmith key),
-  // so drop the key rather than persisting KEY="" which would later read back
-  // as configured. Also self-heals any empty values left by earlier writes.
+  // 空值表示"未设置"（例如跳过可选的 LangSmith 键），
+  // 因此删除键而不是持久化 KEY=""，否则后续读取会误认为已配置。
+  // 同时自动修复之前写入留下的空值。
   for (const key of Object.keys(nextEnv)) {
     if (nextEnv[key] === "") {
       delete nextEnv[key];
