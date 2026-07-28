@@ -208,6 +208,9 @@ catalogs:
     eslint:
       specifier: ^10.8.0
       version: 10.8.0
+    prettier:
+      specifier: ^3.9.6
+      version: 3.9.6
     typescript:
       specifier: ^7.0.2
       version: 7.0.2
@@ -229,7 +232,7 @@ importers:
         specifier: ^17.8.0
         version: 17.8.0
       prettier:
-        specifier: ^3.9.6
+        specifier: 'catalog:'
         version: 3.9.6
       turbo:
         specifier: ^2.10.7
