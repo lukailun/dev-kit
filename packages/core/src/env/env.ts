@@ -222,8 +222,7 @@ export async function saveDevKitEnv(updates: EnvMap): Promise<void> {
     ...currentEnv,
     ...updates,
   };
-  // 空值表示"未设置"（例如跳过可选的 LangSmith 键），
-  // 因此删除键而不是持久化 KEY=""，否则后续读取会误认为已配置。
+  // 空值表示"未设置"，因此删除键而不是持久化 KEY=""，否则后续读取会误认为已配置。
   // 同时自动修复之前写入留下的空值。
   for (const key of Object.keys(nextEnv)) {
     if (nextEnv[key] === "") {
