@@ -14,13 +14,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.15.1",
-      "onFail": "download"
-    }
-  },
+  "packageManager": "pnpm@11.17.0",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.15.3",
