@@ -17,12 +17,12 @@
   "packageManager": "pnpm@11.17.0",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^22.15.3",
-    "eslint": "^10.7.0",
-    "globals": "^17.7.0",
+    "@types/node": "^22.20.1",
+    "eslint": "catalog:",
+    "globals": "^17.8.0",
     "prettier": "^3.9.6",
-    "turbo": "^2.10.5",
-    "typescript": "^7.0.2",
+    "turbo": "^2.10.7",
+    "typescript": "catalog:",
     "typescript-eslint": "^8.65.0"
   },
   "type": "module"

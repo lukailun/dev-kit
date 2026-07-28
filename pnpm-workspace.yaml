@@ -3,6 +3,7 @@ packages:
   - "packages/*"
 
 catalog:
+  eslint: ^10.8.0
   typescript: ^7.0.2
 
 catalogMode: strict
