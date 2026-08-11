@@ -126,8 +126,7 @@ export const CREDENTIAL_DIAGNOSTIC_ENV_KEYS: readonly string[] = [
 ];
 
 /**
- * 代理环境调试行中转储的键：包括所有受管键，以及 OpenWiki 读取但从不持久化的
- * LangChain 端点覆盖。由 {@link MANAGED_ENV_KEYS} 派生，不会出现不同步。
+ * 代理环境调试行中转储的键：包括所有受管键。由 {@link MANAGED_ENV_KEYS} 派生，不会出现不同步。
  */
 export const DEBUG_ENV_KEYS: readonly string[] = [
   ...MANAGED_ENV_KEYS,
@@ -138,7 +137,7 @@ const managedEnvKeys: readonly string[] = MANAGED_ENV_KEYS;
 
 /**
  * 启动时捕获的受管凭证键的 shell 值，在任何加载或保存写入 `process.env` 之前捕获一次。
- * shell export 在运行时优先于 `~/.openwiki/.env`，因此此快照让向导可以告知用户
+ * shell export 在运行时优先于 `~/.dev-kit/.env`，因此此快照让向导可以告知用户
  * 保存的值是否会被覆盖，并防止 {@link saveDevKitEnv} 在进程内遮蔽 shell 变量。
  * 仅保存在内存中，不会持久化或记录日志。
  */
@@ -146,7 +145,7 @@ let shellEnvAtStartup: Record<string, string> | undefined;
 
 /**
  * 快照受管凭证键的 shell 值。幂等操作：首次调用生效，
- * 后续的加载或保存不会捕获 OpenWiki 自身注入 `process.env` 的值。
+ * 后续的加载或保存不会捕获 dev-kit 自身注入 `process.env` 的值。
  */
 function captureShellEnv(): void {
   if (shellEnvAtStartup !== undefined) {
@@ -176,7 +175,7 @@ export function getShellEnvValue(key: string): string | undefined {
 }
 
 /**
- * 首次加载时 `~/.openwiki/.env` 中保存的值，在 shell export 在 `process.env` 中生效之前。
+ * 首次加载时 `~/.dev-kit/.env` 中保存的值，在 shell export 在 `process.env` 中生效之前。
  * 使设置向导可以从保存的配置（而非可能被 shell 变量覆盖的 `process.env`）预填字段，
  * 编辑配置时不会捕获 shell 覆盖值。仅保存在内存中。
  */

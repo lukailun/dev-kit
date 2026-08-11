@@ -4,6 +4,9 @@
     "outDir": "dist",
     "rootDir": "src",
     "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": false,
     "paths": {
       "@/*": ["./src/*"]
     }
