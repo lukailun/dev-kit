@@ -15,14 +15,16 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup && tsc -p tsconfig.build.json",
     "clean": "rm -rf dist",
-    "dev": "tsc --watch"
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "tsup": "catalog:",
     "typescript": "catalog:"
   }
 }

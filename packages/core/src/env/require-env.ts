@@ -1,5 +1,5 @@
 import { env } from 'process';
-import { ENV_PATH } from '@/env/env-path';
+import { ENV_PATH } from './env-path.js';
 
 /**
  * 读取并验证单个环境变量，缺失时抛出错误（而非 process.exit）
